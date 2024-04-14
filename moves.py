@@ -6,12 +6,15 @@ import random
 class BattleEventQueue:
     def __init__(self):
         self.events = queue.SimpleQueue()
-    def signal_stats_change(self, targets: List[str], stats: str, modifiers: int):
+    def signal_stats_change(self, targets: List[Person], stats: str, modifiers: int):
         """ updates simple queue """
         self.events.put(("stat", targets, stats, modifiers))
-    def signal_item_event(self, source : str, item):
+    def signal_item_event(self, source : Person, item):
         """ updates simple queue """
         self.events.put(("item", source))
+    def signal_status_effect_event(self, target : Person,  ailment: str):
+        """ updates simple queue """
+        self.events.put(("status", target, ailment))
 
 def process_event_queue(battleEvents: BattleEventQueue, party: Party):
     while not battleEvents.events.empty():
@@ -44,17 +47,18 @@ def process_event_queue(battleEvents: BattleEventQueue, party: Party):
         else:
             print(f"unknown event {event[0]}")
 
-
-def Payoff(event: BattleEventQueue, person: str, target: str, payment: int, demoralize: int):
+# replace all person: str with person: Person. Also, do this for targets
+def Payoff(event: BattleEventQueue, caster: Person, enemy: Person, payment: int, demoralize: int):
     """ you pay off person to lower their moral and prevent an attack """
-    event.signal_stats_change([person], "money", -1 * payment)
-    event.signal_stats_change([target], "moral", demoralize)
+    event.signal_stats_change([caster], "money", -1 * payment)
+    event.signal_stats_change([enemy], "moral", demoralize)
 
-def MassPayoff(event: BattleEventQueue, person: str, targets: List[str], payment: int, demoralize: int):
+def MassPayoff(event: BattleEventQueue, caster: Person, enemies: List[Person], payment: int, demoralize: int):
     """ you pay off person to lower their moral and prevent an attack """
-    event.signal_stats_change([person], "money", -1 * payment)
-    event.signal_stats_change(targets, "moral", demoralize)
+    event.signal_stats_change([caster], "money", -1 * payment)
+    event.signal_stats_change(enemies, "moral", demoralize)
 
+# add status effect enum here
 def BamBoozle(event: BattleEventQueue, person, target):
     """ confuse enemy and waste their turn """
     pass
@@ -73,6 +77,8 @@ def DispelEvil(event, person, target):
         hit = person.stat.attacks
     pass
 
+def EchoingEndorsement (event, allies, incMod):
+    """ increase attack stat for all ally party members"""
 
 #multi target moves
 def MassDispelEvil(event, person, targets):
@@ -106,6 +112,26 @@ def PolicyParalyze():
     rendering them unable to act."""
     pass
 
-def useItem(event, person):
+def KarmaCascade():
     pass
 
+def AuraOfAbundance():
+    pass
+
+def TranscendentTornado():
+    pass
+
+def MeditativeMirage():
+    pass
+
+def ApocalypticAnnihilation():
+    pass
+
+def useItem(event, itemName, caster, targets, func):
+    """ signal the item the caster used """
+    event.signal_item_event(caster, itemName)
+    func(event, caster, targets)
+
+@useItem
+def usePotion(event, caster, targets, healthPoints=10):
+    event.signal_stats_change([caster], "healthPoints", healthPoints)
