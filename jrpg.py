@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from typing import List, Callable
+from .moves import BattleEventQueue
 
 class Affinity(Enum):
     SPIRITUALITY=1
@@ -25,16 +26,10 @@ class Item:
     quantity: int
 
 @dataclass
-class Move:
-    func: Callable[[str], List[str]]
-    name: str
-    description: str
-
-@dataclass
 class Person:
-    stat: Stats
     name: str
-    moves: List[Move]
+    stat: Stats
+    moves: List[Callable[BattleEventQueue, Person, Person]]
 
 @dataclass
 class Party:
