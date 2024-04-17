@@ -1,22 +1,28 @@
 import queue
-from .jprg import Party, Affinity
+from .jprg import Affinity, Party, Person
 from typing import List
 import random
+import functools
 
 class BattleEventQueue:
     def __init__(self):
         self.events = queue.SimpleQueue()
-    def signal_stats_change(self, targets: List[Person], stats: str, modifiers: int):
+    def signal_stats_change(self, target:Person, stats: str, modifiers: int):
         """ updates simple queue """
         self.events.put(("stat", targets, stats, modifiers))
     def signal_item_event(self, source : Person, item):
         """ updates simple queue """
         self.events.put(("item", source))
-    def signal_status_effect_event(self, target : Person,  ailment: str):
+    def signal_status_effect_event(self, target: Person,  ailment: str):
         """ updates simple queue """
         self.events.put(("status", target, ailment))
+    def signal_miss_event(self, target:Person):
+        self.events.put(("miss", target))
 
-def process_event_queue(battleEvents: BattleEventQueue, party: Party):
+def process_stat_changes(event, everyone: Party):
+    pass
+
+def process_event_queue(battleEvents: BattleEventQueue, everyone: Party):
     while not battleEvents.events.empty():
         event = battleEvents.events.get()
         if event[0] == "stat":
@@ -47,37 +53,85 @@ def process_event_queue(battleEvents: BattleEventQueue, party: Party):
         else:
             print(f"unknown event {event[0]}")
 
-# replace all person: str with person: Person. Also, do this for targets
+def checkIfSpiritualAttackHits(func, affinityMod, maxDifficulty):
+    @functools.wrap(func)
+    def wrapper_timer(*args, **kwargs):
+        event = args[0]
+        person = args[1]
+        target = args[2]
+        difficulty=random.randint(target.stat.reflex,  maxDifficulty)
+        if person.stat.affinity == Affinity.SPIRITUALITY:
+            hit = person.stat.attack * affinityMod
+        else:
+            hit = person.stat.attacks
+        if hit > difficulty:
+            func(*args, **kwargs)
+        else:
+            event.signal_miss_event(target)
+    return wrapper_timer
+
+def checkIfPersuasiveAttackHits(func, affinityMod, maxDifficulty):
+    @functools.wrap(func)
+    def wrapper_timer(*args, **kwargs):
+        event = args[0]
+        person = args[1]
+        target = args[2]
+        difficulty=random.randint(target.stat.discernment,  maxDifficulty)
+        if person.stat.affinity == Affinity.PERSAUSION:
+            hit = person.stat.attack * affinityMod
+        else:
+            hit = person.stat.attacks
+        if hit > difficulty:
+            func(*args, **kwargs)
+        else:
+            event.signal_miss_event(target)
+    return wrapper_timer
+
+def checkIfFinancialAttackHits(func):
+    @functools.wrap(func)
+    def wrapper_timer(*args, **kwargs):
+        event = args[0]
+        person = args[1]
+        target = args[2]
+        if person.stat.money > target.stat.money:
+            func(*args, **kwargs)
+        else:
+            event.signal_miss_event(target)
+    return wrapper_timer
+
+
+@checkIfFinancialAttackHits
 def Payoff(event: BattleEventQueue, caster: Person, enemy: Person, payment: int, demoralize: int):
     """ you pay off person to lower their moral and prevent an attack """
-    event.signal_stats_change([caster], "money", -1 * payment)
-    event.signal_stats_change([enemy], "moral", demoralize)
+    event.signal_stats_change(caster, "money", payment)
+    event.signal_stats_change(enemy, "moral", demoralize)
 
 def MassPayoff(event: BattleEventQueue, caster: Person, enemies: List[Person], payment: int, demoralize: int):
-    """ you pay off person to lower their moral and prevent an attack """
-    event.signal_stats_change([caster], "money", -1 * payment)
-    event.signal_stats_change(enemies, "moral", demoralize)
+    for enemy in enemies:
+        Payoff(event, caster, enemy, payment, demoralize)
 
-# add status effect enum here
-def BamBoozle(event: BattleEventQueue, person, target):
+#TODO: create status effect enum instead of string
+def BamBoozle(event: BattleEventQueue, person: Person, target: Person):
     """ confuse enemy and waste their turn """
+    event.signal_status_effect_event(target, "confusion")
     pass
 
-def PreachFinancialFreedom(event: BattleEventQueue, person: Person, target: Person):
-    """ lowers enemy moral and atk by amount of money you have """
-    pass
-
-def DispelEvil(event, person, target):
-    """ does light damage, contact hit is based on atk and affinity"""
-    landsHit=random.randint(10, target.stat.reflex * 10)
-    hit = 0
-    if person.stat.affinity == Affinity.SPIRITUALITY:
-        hit = person.stat.attack * 2
+def PreachFinancialFreedom(event: BattleEventQueue, person: Person, allies: List[Person], loss, gain):
+    """ increase ally's moral but pay with money """
+    if person.stat.money >= loss * len(allies):
+        event.signal_stats_change(person, "money", loss)
+        for ally in allies:
+            event.signal_stats_change(ally, "moral", gain)
     else:
-        hit = person.stat.attacks
-    pass
+        event.signal_miss_event(person)
 
-def EchoingEndorsement (event, allies, incMod):
+checkIfSpiritualAttackHits(affinityMod=1.5, maxDifficulty=20)
+def DispelEvil(event, person, target, loss):
+    """ does light damage, contact hit is based on atk and affinity"""
+    event.signal_stats_change(target, "healthPoints", loss)
+
+
+def EchoingEndorsement (event, person: Person, allies: List[Person], gain):
     """ increase attack stat for all ally party members"""
 
 #multi target moves
@@ -112,6 +166,12 @@ def PolicyParalyze():
     rendering them unable to act."""
     pass
 
+def PyramidPummel():
+    pass
+
+def InfluenceIncantation():
+    pass
+
 def KarmaCascade():
     pass
 
@@ -126,6 +186,13 @@ def MeditativeMirage():
 
 def ApocalypticAnnihilation():
     pass
+
+def ConformityCrush():
+    pass
+
+def PowerPlay():
+    pass
+
 
 def useItem(event, itemName, caster, targets, func):
     """ signal the item the caster used """
