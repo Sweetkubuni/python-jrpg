@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
-from typing import List, Callable
+from typing import List, Callable, Union
 from .moves import BattleEventQueue
 
 class Affinity(Enum):
@@ -25,11 +25,27 @@ class Item:
     description: str
     quantity: int
 
+class TargetType(Enum):
+    Self=1
+    Ally=2
+    Enemy=3
+
+class MoveType(Enum):
+    Single=1
+    Multi=2
+
+@dataclass
+class Move:
+    targetType: TargetType
+    moveType: MoveType
+    multi: Union[Callable[BattleEventQueue, Person, List[Person]], None]
+    single: Union[Callable[BattleEventQueue, Person, Person], None]
+
 @dataclass
 class Person:
     name: str
     stat: Stats
-    moves: List[Callable[BattleEventQueue, Person, Person]]
+    moves: Move
 
 @dataclass
 class Party:
