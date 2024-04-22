@@ -17,6 +17,9 @@ class Stats:
     healthPoints: int
     speed: int
     money: int
+    finesse: int
+    luck: int
+    allegiance: int
     affinity: Affinity
 
 @dataclass
