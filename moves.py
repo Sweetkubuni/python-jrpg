@@ -19,6 +19,10 @@ class BattleEventQueue:
     def signal_miss_event(self, target:Person):
         self.events.put(("miss", target))
 
+
+# we need to seperate out process event functions to handle specific events
+# we need one overall process_event_queue that takes as params
+#battleEvents, enemies: Party, allies: Party
 def process_stat_changes(event, everyone: Party):
     pass
 
