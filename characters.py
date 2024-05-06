@@ -5,7 +5,9 @@ from functools import partial
 
 
 payOff = partial(Payoff, payment=10, demoralize=-2)
+
 adam = Person("adam", Stats(10, 2, 1, 4, 20, 5, 20, Affinity.FINANCE), [payOff])
+
 everyone = [
     adam
 ]

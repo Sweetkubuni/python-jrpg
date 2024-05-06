@@ -1,61 +1,8 @@
-import queue
-from .jprg import Affinity, Party, Person
+from .jprg import Affinity, Party, Person, Alignment
 from typing import List
 import random
 import functools
 
-class BattleEventQueue:
-    def __init__(self):
-        self.events = queue.SimpleQueue()
-    def signal_stats_change(self, target:Person, stats: str, modifiers: int):
-        """ updates simple queue """
-        self.events.put(("stat", targets, stats, modifiers))
-    def signal_item_event(self, source : Person, item):
-        """ updates simple queue """
-        self.events.put(("item", source))
-    def signal_status_effect_event(self, target: Person,  ailment: str):
-        """ updates simple queue """
-        self.events.put(("status", target, ailment))
-    def signal_miss_event(self, target:Person):
-        self.events.put(("miss", target))
-
-
-# we need to seperate out process event functions to handle specific events
-# we need one overall process_event_queue that takes as params
-#battleEvents, enemies: Party, allies: Party
-def process_stat_changes(event, everyone: Party):
-    pass
-
-def process_event_queue(battleEvents: BattleEventQueue, everyone: Party):
-    while not battleEvents.events.empty():
-        event = battleEvents.events.get()
-        if event[0] == "stat":
-            for person in party.people:
-                if person.name in event[1]:
-                    status_attrib = event[2]
-                    mod = event[3]
-                    if status_attrib == "moral":
-                        person.stat.moral += mod
-                    elif status_attrib == "attack":
-                        person.stat.attack += mod;
-                    elif status_attrib == "reflex":
-                        person.stat.reflex += mod;
-                    elif status_attrib == "discernment":
-                        person.stat.discernment += mod;
-                    elif status_attrib == "healthPoints":
-                        person.stat.healthPoints += mod;
-                    elif status_attrib == "speed":
-                        person.stat.speed += mod;
-                    elif status_attrib == "money":
-                        person.stat.money += mod;
-                    else:
-                        print(f"unknown stats {status_attrib}")
-        elif event[0] == "item":
-            for item in party.items:
-                if item.name == event[1]:
-                    item.quantity -= 1
-        else:
-            print(f"unknown event {event[0]}")
 
 def checkIfSpiritualAttackHits(func, affinityMod, maxDifficulty):
     @functools.wrap(func)
@@ -198,11 +145,11 @@ def PowerPlay():
     pass
 
 
-def useItem(event, itemName, caster, targets, func):
+def useItem(event, caster, targets, itemName, party, func):
     """ signal the item the caster used """
-    event.signal_item_event(caster, itemName)
+    event.signal_item_event(party, itemName)
     func(event, caster, targets)
 
 @useItem
 def usePotion(event, caster, targets, healthPoints=10):
-    event.signal_stats_change([caster], "healthPoints", healthPoints)
+    event.signal_stats_change(caster, "healthPoints", healthPoints)
