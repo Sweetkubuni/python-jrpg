@@ -3,7 +3,8 @@
 #params might need to be enemies: List[Person], allies: List[Person]
 
 
-main_loop:
+def main_loop:
+    pass
     #(1) calculate the turn-order of each person
     #(2) enemy ai and human pre-empthaically selects moves for each person
     # in their party list
